@@ -17,37 +17,34 @@ public class SolutionFilesMover {
         if (xmlFolder == null) {
             return;
         }
-        
+
         // Zip the "demo" folder and delete it afterwards
         File currentDirectory = new File("./demo");
 
         if (currentDirectory.isDirectory() && currentDirectory.exists()) {
             File[] files = currentDirectory.listFiles();
 
-            if (files.length == 0) {
-                // Stop if there are no files to zip
-                return;
-            }
+            if (files.length > 0) {
+                Path p = Files.createFile(Paths.get("./demo.zip"));
+                try (ZipOutputStream zs = new ZipOutputStream(Files.newOutputStream(p))) {
+                    Path pp = Paths.get("./demo");
+                    Files.walk(pp).filter(path -> !Files.isDirectory(path)).forEach(path -> {
+                        ZipEntry zipEntry = new ZipEntry(pp.relativize(path).toString());
+                        try {
+                            zs.putNextEntry(zipEntry);
+                            zs.write(Files.readAllBytes(path));
+                            zs.closeEntry();
+                        } catch (Exception e) {
+                            e.printStackTrace(System.out);
+                        }
+                    });
+                }
 
-            Path p = Files.createFile(Paths.get("./demo.zip"));
-            try (ZipOutputStream zs = new ZipOutputStream(Files.newOutputStream(p))) {
-                Path pp = Paths.get("./demo");
-                Files.walk(pp).filter(path -> !Files.isDirectory(path)).forEach(path -> {
-                    ZipEntry zipEntry = new ZipEntry(pp.relativize(path).toString());
-                    try {
-                        zs.putNextEntry(zipEntry);
-                        zs.write(Files.readAllBytes(path));
-                        zs.closeEntry();
-                    } catch (Exception e) {
-                        e.printStackTrace(System.out);
+                // Delete the contents of the demo folder afterwards
+                for (File f : files) {
+                    if (!f.isDirectory()) {
+                        f.delete();
                     }
-                });
-            }
-
-            // Delete the contents of the demo folder afterwards
-            for (File f : files) {
-                if (!f.isDirectory()) {
-                    f.delete();
                 }
             }
         } else {
